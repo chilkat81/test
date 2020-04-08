@@ -302,15 +302,19 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else echo sh; fi ; fi)
 
 ifneq ($(LLVM),)
-HOSTCC       = clang
-HOSTCXX      = clang++
+HOSTCC  = clang
+HOSTCXX = clang++
 else
 HOSTCC       = gcc
 HOSTCXX      = g++
 endif
+HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89 -pipe
+HOSTCXXFLAGS = -O3
 
-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O2
+ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
+		-Wno-missing-field-initializers
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -344,30 +348,33 @@ include scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 CPP		= $(CC) -E
+LDLLD           = ld.lld
+LLVMNM          = llvm-nm
+LLVMOBJCOPY     = llvm-objcopy
 ifneq ($(LLVM),)
 CC		= clang
 LD		= ld.lld
 AR		= llvm-ar
+AS              = llvm-as
 NM		= llvm-nm
-OBJCOPY	= llvm-objcopy
-OBJDUMP	= llvm-objdump
-READELF	= llvm-readelf
-OBJSIZE	= llvm-size
+OBJCOPY		= llvm-objcopy
+OBJDUMP		= llvm-objdump
+READELF		= llvm-readelf
+OBJSIZE		= llvm-size
 STRIP		= llvm-strip
 else
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
 CC		= $(CROSS_COMPILE)gcc
-LDGOLD		= $(CROSS_COMPILE)ld.gold
-LDLLD		= ld.lld
-CPP		= $(CC) -E
+LD		= $(CROSS_COMPILE)ld
+LDGOLD          = $(CROSS_COMPILE)ld.gold
 AR		= $(CROSS_COMPILE)ar
+AS              = $(CROSS_COMPILE)as
 NM		= $(CROSS_COMPILE)nm
-STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
-OBJSIZE		= $(CROSS_COMPILE)size
 READELF		= $(CROSS_COMPILE)readelf
+OBJSIZE		= $(CROSS_COMPILE)size
+STRIP		= $(CROSS_COMPILE)strip
+endif
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
